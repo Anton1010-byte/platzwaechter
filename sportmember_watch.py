@@ -212,7 +212,7 @@ def main():
                 acts = sm.activities()
             errors_in_row = 0
 
-            by_id = {a["id"]: a for a in acts}
+            by_id = {a["id"]: a for a in acts if isinstance(a, dict) and "id" in a}
             for aid in sorted(ids):
                 a = by_id.get(aid)
                 if not a:
