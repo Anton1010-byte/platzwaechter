@@ -1,0 +1,34 @@
+name: Platzwaechter
+
+on:
+  schedule:
+    - cron: "7 * * * *"      # jede Stunde (Minute 7), Zeit in UTC
+  workflow_dispatch:         # erlaubt den Start per Knopfdruck
+    inputs:
+      test:
+        description: "Nur Test: einmal pruefen und Testnachricht senden"
+        type: boolean
+        default: true
+
+concurrency:
+  group: platzwaechter
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 65
+    env:
+      SM_USER: ${{ secrets.SM_USER }}
+      SM_PASS: ${{ secrets.SM_PASS }}
+      NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+      ACTIVITY_IDS: "57121432"          # Trainings-IDs, mehrere mit Leerzeichen trennen
+      UNTIL: "2026-11-30T12:00"         # Anmeldefrist (Schweizer Zeit)
+    steps:
+      - uses: actions/checkout@v4
+      - name: Testlauf
+        if: github.event_name == 'workflow_dispatch' && inputs.test
+        run: python3 sportmember_watch.py $ACTIVITY_IDS --ci --test
+      - name: Plaetze beobachten (ca. 50 Minuten, alle 3 Minuten)
+        if: github.event_name == 'schedule' || !inputs.test
+        run: python3 sportmember_watch.py $ACTIVITY_IDS --ci --until "$UNTIL" --max-minutes 50
